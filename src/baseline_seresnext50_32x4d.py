@@ -290,6 +290,7 @@ def train_loop(folds, fold):
     # ====================================================
     encoder = Encoder(CFG.model_name, pretrained=True)
     encoder.to(device)
+    encoder_dim = encoder.n_features
     encoder = DataParallel(encoder)
     encoder_optimizer = Adam(encoder.parameters(), lr=CFG.encoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
     encoder_scheduler = get_scheduler(encoder_optimizer)
@@ -300,7 +301,7 @@ def train_loop(folds, fold):
                                    vocab_size=len(tokenizer),
                                    dropout=CFG.dropout,
                                    device=device,
-                                   encoder_dim=encoder.n_features)
+                                   encoder_dim=encoder_dim)
     decoder.to(device)
     decoder = DataParallel(decoder)
     decoder_optimizer = Adam(decoder.parameters(), lr=CFG.decoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
