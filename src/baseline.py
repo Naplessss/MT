@@ -72,7 +72,7 @@ print('cur rank',local_rank,'global_rank', global_rank)
 
 
 class CFG:
-    debug=True
+    debug=False
     max_len=275
     print_freq=1000
     num_workers=6
@@ -241,8 +241,6 @@ def valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, device):
     seq_preds = []
     start = end = time.time()
     valid_tqdm_loader = enumerate(tqdm(valid_loader, 'eval valid set'))
-    # if isinstance(valid_loader.sampler, DistributedSampler):
-    #     raise Exception('At present, we do not support distributed dataloader for evaluation.')
     for step, (images, labels) in valid_tqdm_loader:
         # measure data loading time
         data_time.update(time.time() - end)
@@ -258,7 +256,6 @@ def valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, device):
         _text_preds = tokenizer.predict_captions(_seq_preds)
         text_preds.append(_text_preds)
         text_labels.append(tokenizer.predict_captions(labels))
-        # seq_preds.append(_seq_preds)
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -272,22 +269,17 @@ def valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, device):
                     data_time=data_time,
                     remain=timeSince(start, float(step+1)/len(valid_loader)),
                     ))
-    # seq_preds = torch.Tensor(np.concatenate(seq_preds)).to(device)
-    # gather_seq_preds = [torch.ones_like(seq_preds) for i in range(dist.get_world_size())]
-    # gather_seq_preds = dist_all_gather(gather_seq_preds, seq_preds, 'cat').cpu().numpy()
     text_preds = np.concatenate(text_preds)
     text_labels = np.concatenate(text_labels)
     text_preds = [f"InChI=1S/"+text for text in text_preds]
     text_labels = [f"InChI=1S/"+text.replace('<sos>','') for text in text_labels]
-    print(text_preds[:5],text_labels[:5])
-    # text_preds = np.array(tokenizer.predict_captions(seq_preds))
     score = torch.Tensor([get_score(text_labels, text_preds)]).to(device)
-    print(f'rank {local_rank}, score {score.cpu().numpy()[0]}')
+    LOGGER.info(f'rank {local_rank}, score {score.cpu().numpy()[0]}')
     dist.all_reduce(score, op=dist.ReduceOp.SUM)
     score = score.cpu().numpy()[0] / dist.get_world_size()
-    # if global_rank == 0:
-    #     LOGGER.info(f"labels: {text_labels[:5]}")
-    #     LOGGER.info(f"preds: {text_preds[:5]}")
+    if global_rank == 0:
+        LOGGER.info(f"labels: {text_labels[:5]}")
+        LOGGER.info(f"preds: {text_preds[:5]}")
     return score
 
 
@@ -360,8 +352,6 @@ def train_loop(folds, fold):
     encoder = torch.nn.parallel.DistributedDataParallel(encoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     if global_rank == 0:
         print('encoder DDP finish')
-    # encoder.to(device)
-    # encoder = DataParallel(encoder)
     encoder_optimizer = Adam(encoder.parameters(), lr=CFG.encoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
     encoder_scheduler = get_scheduler(encoder_optimizer)
 
@@ -372,8 +362,6 @@ def train_loop(folds, fold):
                                    dropout=CFG.dropout,
                                    device=local_rank,
                                    encoder_dim=encoder_dim)
-    # decoder.to(device)
-    # decoder = DataParallel(decoder)
     decoder = nn.SyncBatchNorm.convert_sync_batchnorm(decoder).cuda().to(local_rank)
     decoder = torch.nn.parallel.DistributedDataParallel(decoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     if global_rank == 0:
@@ -393,40 +381,21 @@ def train_loop(folds, fold):
     for epoch in range(CFG.epochs):
         print(f'START EPOCH{epoch}')
         start_time = time.time()
-        score = -1
-        text_preds = ['12312']
         # train
         avg_loss = train_fn(train_loader, encoder, decoder, criterion,
                             encoder_optimizer, decoder_optimizer, epoch,
                             encoder_scheduler, decoder_scheduler, local_rank)
-        # At present, we do not support distributed dataloader for evaluation,
-        # which means that even in the distributed mode,
-        # every process will run over the whole dataset
         score = valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, local_rank)
-
-        # text_preds = [f"InChI=1S/{text}" for text in text_preds]
-        # LOGGER.info(f"labels: {valid_labels[:5]}")
-        # LOGGER.info(f"preds: {text_preds[:5]}")
-        # scoring
-        # score = get_score(valid_labels, text_preds)
-        # if global_rank == 0:
-        #     torch.save({'encoder': encoder.state_dict(),
-        #                 'decoder': decoder.state_dict(),
-        #                 'score': score,
-        #                 # 'text_preds': text_preds,
-        #                 },
-        #                 f'../weights/{CFG.model_name}_cache.pth')
-        # dist.barrier()
-        # # print(f'Before load, Local Rank id: {local_rank}')
-        # net_dict = torch.load(f'../weights/{CFG.model_name}_cache.pth')
-        # # print(f'Load weight in Local Rank {local_rank}')
-        # encoder.load_state_dict(net_dict['encoder'])
-        # decoder.load_state_dict(net_dict['decoder'])
-        # dist.barrier()
-        # encoder.load_state_dict(torch.load(f'../weights/{CFG.model_name}_cache.pth', map_location=lambda storage, loc: storage), strict=False)
-        # decoder.load_state_dict(torch.load(f'../weights/{CFG.model_name}_cache.pth', map_location=lambda storage, loc: storage), strict=False)
-        # score = net_dict['score']
-        # text_preds = net_dict['text_preds']
+        if global_rank == 0:
+            torch.save({'encoder': encoder.state_dict(),
+                        'decoder': decoder.state_dict(),
+                        'score': score,
+                        },
+                        f'../weights/{CFG.model_name}_cache.pth')
+        dist.barrier()
+        net_dict = torch.load(f'../weights/{CFG.model_name}_cache.pth')
+        encoder.load_state_dict(net_dict['encoder'])
+        decoder.load_state_dict(net_dict['decoder'])
         if isinstance(encoder_scheduler, ReduceLROnPlateau):
             encoder_scheduler.step(score)
         elif isinstance(encoder_scheduler, CosineAnnealingLR):
@@ -442,7 +411,6 @@ def train_loop(folds, fold):
             decoder_scheduler.step()
 
         elapsed = time.time() - start_time
-        print(f'Local Rank id: {local_rank}')
         if global_rank == 0:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  time: {elapsed:.0f}s')
             LOGGER.info(f'Epoch {epoch+1} - Score: {score:.4f}')
@@ -456,9 +424,9 @@ def train_loop(folds, fold):
                             'decoder': decoder.state_dict(),
                             'decoder_optimizer': decoder_optimizer.state_dict(),
                             'decoder_scheduler': decoder_scheduler.state_dict(),
-                            'text_preds': text_preds,
-                        },
+                            },
                             f'../weights/{CFG.model_name}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
+        dist.barrier()
 
 def main():
 
