@@ -273,13 +273,10 @@ class Encoder(nn.Module):
     def __init__(self, model_name='resnet18', pretrained=False):
         super().__init__()
         self.cnn = timm.create_model(model_name, pretrained=pretrained)
-        self.n_features = self.cnn.fc.in_features
-        self.cnn.global_pool = nn.Identity()
-        self.cnn.fc = nn.Identity()
+        self.n_features = self.cnn.classifier.in_features
 
     def forward(self, x):
-        bs = x.size(0)
-        features = self.cnn(x)
+        features = self.cnn.forward_features(x)
         features = features.permute(0, 2, 3, 1)
         return features
 
