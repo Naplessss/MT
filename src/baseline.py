@@ -59,8 +59,8 @@ parser.add_argument('--local_rank', default=-1, type=int)
 parser.add_argument('--nodes',default=1, type=int)
 args = parser.parse_args()
 
-if args.nodes > 1:
-    os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
+# if args.nodes > 1:
+#     os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
 
 # 1) DDP init
 torch.distributed.init_process_group(backend="nccl")
@@ -75,7 +75,7 @@ class CFG:
     debug=False
     max_len=275
     print_freq=1000
-    num_workers=12
+    num_workers=6
     model_name=args.model_name
     size=args.size
     scheduler='CosineAnnealingLR' # ['ReduceLROnPlateau', 'CosineAnnealingLR', 'CosineAnnealingWarmRestarts']
@@ -395,7 +395,7 @@ def train_loop(folds, fold):
                         'text_preds': text_preds,
                         },
                         f'../weights/{CFG.model_name}_cache.pth')
-        # dist.barrier()
+        dist.barrier()
         net_dict = torch.load(f'../weights/{CFG.model_name}_cache.pth')
         encoder.load_state_dict(net_dict['encoder'])
         decoder.load_state_dict(net_dict['decoder'])
