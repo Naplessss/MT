@@ -3,6 +3,8 @@ git clone http://Naplessss:GZF1233gzf@github.com/Naplessss/MT.git
 cd MT
 echo "copy images from blob..."
 cp /mnt/epblob/zhgao/MT/bms-molecular-translation.zip .
+cp /mnt/epblob/zhgao/MT/tokenizer.pth .
+cp /mnt/epblob/zhgao/MT/train.pkl .
 echo "unzip images ..."
 unzip -q bms-molecular-translation.zip
 echo "install packages..."
