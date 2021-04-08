@@ -1,0 +1,10 @@
+torch
+torchvision
+torchaudio
+albumentations
+pandas
+numpy
+opencv-python
+Levenshtein
+timm
+sklearn
