@@ -428,7 +428,7 @@ def train_loop(folds, fold):
                             'decoder_optimizer': decoder_optimizer.state_dict(),
                             'decoder_scheduler': decoder_scheduler.state_dict(),
                             },
-                            f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
+                            f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
         dist.barrier()
 
 def main():
