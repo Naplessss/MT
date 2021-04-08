@@ -417,7 +417,7 @@ def train_loop(folds, fold):
         if global_rank == 0:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  time: {elapsed:.0f}s')
             LOGGER.info(f'Epoch {epoch+1} - Score: {score:.4f}')
-
+            os.mkdirs(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
             if score < best_score:
                 best_score = score
                 LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f} Model')
