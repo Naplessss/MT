@@ -115,7 +115,7 @@ if CFG.debug:
     CFG.epochs = 10
     train = train.sample(n=1000, random_state=CFG.seed).reset_index(drop=True)
 
-os.mkdirs(f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}', exist_ok=True)
+os.makedirs(f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}', exist_ok=True)
 LOGGER = init_logger(log_file=f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}/{CFG.model_name}_{CFG.meta_info}.log')
 seed_torch(seed=CFG.seed)
 
@@ -418,7 +418,7 @@ def train_loop(folds, fold):
         if global_rank == 0:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  time: {elapsed:.0f}s')
             LOGGER.info(f'Epoch {epoch+1} - Score: {score:.4f}')
-            os.mkdirs(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
+            os.makedirs(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
             if score < best_score:
                 best_score = score
                 LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f} Model')
