@@ -115,7 +115,8 @@ if CFG.debug:
     CFG.epochs = 10
     train = train.sample(n=1000, random_state=CFG.seed).reset_index(drop=True)
 
-LOGGER = init_logger(log_file='/mnt/epblob/zhgao/MT/logs/{}_{}.log'.format(CFG.model_name, CFG.meta_info))
+os.mkdirs(f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}', exist_ok=True)
+LOGGER = init_logger(log_file=f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}/{CFG.model_name}_{CFG.meta_info}.log')
 seed_torch(seed=CFG.seed)
 
 folds = train.copy()
