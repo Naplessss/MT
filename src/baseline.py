@@ -53,8 +53,8 @@ parser = argparse.ArgumentParser(description='CNN-LSTM')
 parser.add_argument('--model_name', default='resnet34')
 parser.add_argument('--size', default=224, type=int)
 parser.add_argument('--batch_size', default=32, type=int)
-parser.add_argument('--encoder_lr', default=3e-4, type=float)
-parser.add_argument('--decoder_lr', default=3e-4, type=float)
+parser.add_argument('--encoder_lr', default=1e-4, type=float)
+parser.add_argument('--decoder_lr', default=4e-4, type=float)
 parser.add_argument('--local_rank', default=-1, type=int)
 parser.add_argument('--nodes',default=1, type=int)
 args = parser.parse_args()
@@ -87,7 +87,7 @@ class CFG:
     #T_0=4 # CosineAnnealingWarmRestarts
     encoder_lr=args.encoder_lr
     decoder_lr=args.decoder_lr
-    min_lr=1e-5
+    min_lr=1e-6
     batch_size=args.batch_size
     weight_decay=1e-8
     gradient_accumulation_steps=1
