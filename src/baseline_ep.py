@@ -57,7 +57,8 @@ parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--encoder_lr', default=1e-4, type=float)
 parser.add_argument('--decoder_lr', default=4e-4, type=float)
 parser.add_argument('--local_rank', default=-1, type=int)
-parser.add_argument('--nodes',default=1, type=int)
+parser.add_argument('--nodes', default=1, type=int)
+parser.add_argument('--debug', default=0, type=int)
 args = parser.parse_args()
 
 # if args.nodes > 1:
@@ -73,7 +74,7 @@ print('cur rank',local_rank,'global_rank', global_rank)
 
 
 class CFG:
-    debug=False
+    debug=False if args.debug==0 else True
     max_len=275
     print_freq=1000
     num_workers=6

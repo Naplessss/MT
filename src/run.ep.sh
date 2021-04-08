@@ -14,3 +14,4 @@ echo "save..."
 cp ../tokenizer.pth /mnt/epblob/zhgao/MT
 cp ../train.pkl /mnt/epblob/zhgao/MT
 
+python -m torch.distributed.launch --nproc_per_node 4 baseline_ep.py --model_name tf_efficientnet_b7 --batch_size 4 --size 448 --debug 1 -meta_info fordebug
