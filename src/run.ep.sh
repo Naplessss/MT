@@ -9,6 +9,8 @@ echo "unzip images ..."
 unzip -q bms-molecular-translation.zip
 echo "install packages..."
 cd src
+apt update
+apt install -y libgl1-mesa-dev
 pip install -r requirements.txt
 # echo "preprocess..."
 # python preprocess.py
