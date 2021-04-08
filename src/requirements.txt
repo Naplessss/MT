@@ -4,7 +4,7 @@ torchaudio
 albumentations
 pandas
 numpy
-opencv-python
+opencv_python_headless
 Levenshtein
 timm
 sklearn
