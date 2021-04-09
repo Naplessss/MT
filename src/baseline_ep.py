@@ -187,7 +187,7 @@ def train_fn(train_loader, encoder, decoder, criterion,
         features = encoder(images)
         predictions, caps_sorted, decode_lengths, alphas, sort_ind = decoder(features, labels, label_lengths)
         targets = caps_sorted[:, 1:]
-        decode_lengths = decode_lengths.cpu()
+        # decode_lengths = decode_lengths.cpu()
         predictions = pack_padded_sequence(predictions, decode_lengths, batch_first=True, enforce_sorted=False).data
         targets = pack_padded_sequence(targets, decode_lengths, batch_first=True, enforce_sorted=False).data
         loss = criterion(predictions, targets)
