@@ -395,16 +395,16 @@ def train_loop(folds, fold):
                             encoder_optimizer, decoder_optimizer, epoch,
                             encoder_scheduler, decoder_scheduler, local_rank)
         score = valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, local_rank)
-        if global_rank == 0:
-            torch.save({'encoder': encoder.state_dict(),
-                        'decoder': decoder.state_dict(),
-                        'score': score,
-                        },
-                        f'{CFG.model_name}_cache.pth')
-        dist.barrier()
-        net_dict = torch.load(f'{CFG.model_name}_cache.pth')
-        encoder.load_state_dict(net_dict['encoder'])
-        decoder.load_state_dict(net_dict['decoder'])
+        # if global_rank == 0:
+        #     torch.save({'encoder': encoder.state_dict(),
+        #                 'decoder': decoder.state_dict(),
+        #                 'score': score,
+        #                 },
+        #                 f'{CFG.model_name}_cache.pth')
+        # dist.barrier()
+        # net_dict = torch.load(f'{CFG.model_name}_cache.pth')
+        # encoder.load_state_dict(net_dict['encoder'])
+        # decoder.load_state_dict(net_dict['decoder'])
         if isinstance(encoder_scheduler, ReduceLROnPlateau):
             encoder_scheduler.step(score)
         elif isinstance(encoder_scheduler, CosineAnnealingLR):
