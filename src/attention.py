@@ -99,9 +99,9 @@ class DecoderWithAttention(nn.Module):
         h, c = self.init_hidden_state(encoder_out)  # (batch_size, decoder_dim)
         # set decode length by caption length - 1 because of omitting start token
         decode_lengths = (caption_lengths - 1).tolist()
-        decode_lengths = [min(max_len, decode_length) for decode_length in decode_lengths]
-        predictions = torch.zeros(batch_size, max_len, vocab_size).to(self.device)
-        alphas = torch.zeros(batch_size, max_len, num_pixels).to(self.device)
+        # decode_lengths = [min(max_len, decode_length) for decode_length in decode_lengths]
+        predictions = torch.zeros(batch_size, max(decode_lengths), vocab_size).to(self.device)
+        alphas = torch.zeros(batch_size, max(decode_lengths), num_pixels).to(self.device)
         # predict sequence
         for t in range(max(decode_lengths)):
             batch_size_t = sum([l > t for l in decode_lengths])
@@ -114,7 +114,7 @@ class DecoderWithAttention(nn.Module):
             preds = self.fc(self.dropout(h))  # (batch_size_t, vocab_size)
             predictions[:batch_size_t, t, :] = preds
             alphas[:batch_size_t, t, :] = alpha
-        decode_lengths = torch.tensor(decode_lengths, dtype=torch.int32).to(self.device)
+        # decode_lengths = torch.tensor(decode_lengths, dtype=torch.int32).to(self.device)
         return predictions, encoded_captions, decode_lengths, alphas, sort_ind
 
     def predict(self, encoder_out, decode_lengths, tokenizer):
