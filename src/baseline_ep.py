@@ -53,7 +53,7 @@ parser = argparse.ArgumentParser(description='CNN-LSTM')
 parser.add_argument('--model_name', default='resnet34')
 parser.add_argument('--meta_info', default='v0')
 parser.add_argument('--size', default=224, type=int)
-parser.add_argument('--batch_size', default=32, type=int)
+parser.add_argument('--batch_size_per_node', default=32, type=int)
 parser.add_argument('--encoder_lr', default=1e-4, type=float)
 parser.add_argument('--decoder_lr', default=4e-4, type=float)
 parser.add_argument('--local_rank', default=-1, type=int)
@@ -91,7 +91,7 @@ class CFG:
     encoder_lr=args.encoder_lr
     decoder_lr=args.decoder_lr
     min_lr=1e-6
-    batch_size=args.batch_size
+    batch_size=args.batch_size_per_node
     weight_decay=1e-8
     gradient_accumulation_steps=1
     max_grad_norm=5
