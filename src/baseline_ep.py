@@ -61,8 +61,8 @@ parser.add_argument('--nodes', default=1, type=int)
 parser.add_argument('--debug', default=0, type=int)
 args = parser.parse_args()
 
-# if args.nodes > 1:
-#     os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
+if args.nodes > 1:
+    os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
 
 # 1) DDP init
 torch.distributed.init_process_group(backend="nccl")
