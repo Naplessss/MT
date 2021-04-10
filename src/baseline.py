@@ -51,16 +51,18 @@ import torch.distributed as dist
 import argparse
 parser = argparse.ArgumentParser(description='CNN-LSTM')
 parser.add_argument('--model_name', default='resnet34')
+parser.add_argument('--meta_info', default='v0')
 parser.add_argument('--size', default=224, type=int)
-parser.add_argument('--batch_size', default=32, type=int)
+parser.add_argument('--batch_size_per_node', default=32, type=int)
 parser.add_argument('--encoder_lr', default=1e-4, type=float)
 parser.add_argument('--decoder_lr', default=4e-4, type=float)
 parser.add_argument('--local_rank', default=-1, type=int)
-parser.add_argument('--nodes',default=1, type=int)
+parser.add_argument('--nodes', default=1, type=int)
+parser.add_argument('--debug', default=0, type=int)
 args = parser.parse_args()
 
-# if args.nodes > 1:
-#     os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
+if args.nodes > 1:
+    os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
 
 # 1) DDP init
 torch.distributed.init_process_group(backend="nccl")
@@ -72,11 +74,12 @@ print('cur rank',local_rank,'global_rank', global_rank)
 
 
 class CFG:
-    debug=False
+    debug=False if args.debug==0 else True
     max_len=275
     print_freq=1000
     num_workers=6
     model_name=args.model_name
+    meta_info=args.meta_info
     size=args.size
     scheduler='CosineAnnealingLR' # ['ReduceLROnPlateau', 'CosineAnnealingLR', 'CosineAnnealingWarmRestarts']
     epochs=16
@@ -88,7 +91,7 @@ class CFG:
     encoder_lr=args.encoder_lr
     decoder_lr=args.decoder_lr
     min_lr=1e-6
-    batch_size=args.batch_size
+    batch_size=args.batch_size_per_node
     weight_decay=1e-8
     gradient_accumulation_steps=1
     max_grad_norm=5
@@ -112,7 +115,8 @@ if CFG.debug:
     CFG.epochs = 10
     train = train.sample(n=1000, random_state=CFG.seed).reset_index(drop=True)
 
-LOGGER = init_logger(log_file='../logs/{}.log'.format(CFG.model_name))
+os.makedirs(f'../logs/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
+LOGGER = init_logger(log_file=f'../logs/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}.log')
 seed_torch(seed=CFG.seed)
 
 folds = train.copy()
@@ -183,7 +187,7 @@ def train_fn(train_loader, encoder, decoder, criterion,
         features = encoder(images)
         predictions, caps_sorted, decode_lengths, alphas, sort_ind = decoder(features, labels, label_lengths)
         targets = caps_sorted[:, 1:]
-        decode_lengths = decode_lengths.cpu()
+        # decode_lengths = decode_lengths.cpu()
         predictions = pack_padded_sequence(predictions, decode_lengths, batch_first=True, enforce_sorted=False).data
         targets = pack_padded_sequence(targets, decode_lengths, batch_first=True, enforce_sorted=False).data
         loss = criterion(predictions, targets)
@@ -391,16 +395,16 @@ def train_loop(folds, fold):
                             encoder_optimizer, decoder_optimizer, epoch,
                             encoder_scheduler, decoder_scheduler, local_rank)
         score = valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, local_rank)
-        if global_rank == 0:
-            torch.save({'encoder': encoder.state_dict(),
-                        'decoder': decoder.state_dict(),
-                        'score': score,
-                        },
-                        f'../weights/{CFG.model_name}_cache.pth')
-        dist.barrier()
-        net_dict = torch.load(f'../weights/{CFG.model_name}_cache.pth')
-        encoder.load_state_dict(net_dict['encoder'])
-        decoder.load_state_dict(net_dict['decoder'])
+        # if global_rank == 0:
+        #     torch.save({'encoder': encoder.state_dict(),
+        #                 'decoder': decoder.state_dict(),
+        #                 'score': score,
+        #                 },
+        #                 f'{CFG.model_name}_cache.pth')
+        # dist.barrier()
+        # net_dict = torch.load(f'{CFG.model_name}_cache.pth')
+        # encoder.load_state_dict(net_dict['encoder'])
+        # decoder.load_state_dict(net_dict['decoder'])
         if isinstance(encoder_scheduler, ReduceLROnPlateau):
             encoder_scheduler.step(score)
         elif isinstance(encoder_scheduler, CosineAnnealingLR):
@@ -419,7 +423,7 @@ def train_loop(folds, fold):
         if global_rank == 0:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  time: {elapsed:.0f}s')
             LOGGER.info(f'Epoch {epoch+1} - Score: {score:.4f}')
-
+            os.makedirs(f'../weights/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
             if score < best_score:
                 best_score = score
                 LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f} Model')
@@ -430,7 +434,7 @@ def train_loop(folds, fold):
                             'decoder_optimizer': decoder_optimizer.state_dict(),
                             'decoder_scheduler': decoder_scheduler.state_dict(),
                             },
-                            f'../weights/{CFG.model_name}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
+                            f'../weights/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
         dist.barrier()
 
 def main():
