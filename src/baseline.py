@@ -287,7 +287,12 @@ class Encoder(nn.Module):
     def __init__(self, model_name='resnet18', pretrained=False):
         super().__init__()
         self.cnn = timm.create_model(model_name, pretrained=pretrained)
-        self.n_features = self.cnn.classifier.in_features
+        if hasattr(self.cnn, 'classifier'):
+            self.n_features = self.cnn.classifier.in_features
+        elif hasattr(self.cnn, 'head'):
+            self.n_features = self.cnn.head.fc.in_features
+        else:
+            self.n_features = 3072
 
     def forward(self, x):
         features = self.cnn.forward_features(x)
