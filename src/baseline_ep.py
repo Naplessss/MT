@@ -92,7 +92,7 @@ class CFG:
     decoder_lr=args.decoder_lr
     min_lr=1e-6
     batch_size=args.batch_size_per_node
-    weight_decay=1e-8
+    weight_decay=1e-6
     gradient_accumulation_steps=1
     max_grad_norm=5
     attention_dim=256
