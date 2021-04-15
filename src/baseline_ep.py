@@ -56,8 +56,10 @@ parser.add_argument('--size', default=224, type=int)
 parser.add_argument('--batch_size_per_node', default=32, type=int)
 parser.add_argument('--encoder_lr', default=1e-4, type=float)
 parser.add_argument('--decoder_lr', default=4e-4, type=float)
+parser.add_argument('--min_lr', default=1e-6, type=int)
 parser.add_argument('--local_rank', default=-1, type=int)
 parser.add_argument('--nodes', default=1, type=int)
+parser.add_argument('--tmax', default=4, type=int)
 parser.add_argument('--debug', default=0, type=int)
 args = parser.parse_args()
 
@@ -86,7 +88,7 @@ class CFG:
     #factor=0.2 # ReduceLROnPlateau
     #patience=4 # ReduceLROnPlateau
     #eps=1e-6 # ReduceLROnPlateau
-    T_max=4 # CosineAnnealingLR
+    T_max=args.tmax # CosineAnnealingLR
     #T_0=4 # CosineAnnealingWarmRestarts
     encoder_lr=args.encoder_lr
     decoder_lr=args.decoder_lr
