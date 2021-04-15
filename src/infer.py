@@ -185,8 +185,10 @@ if __name__ == '__main__':
     net_dict = load_weight()
     encoder = Encoder(CFG.model_name, pretrained=False)
     encoder.load_state_dict(net_dict['encoder'])
-    encoder.to(device)
     encoder_dim = encoder.n_features
+    # encoder = DataParallel(encoder).to(device)
+    encoder.to(device)
+
 
     decoder = DecoderWithAttention(attention_dim=CFG.attention_dim,
                                    embed_dim=CFG.embed_dim,
@@ -196,7 +198,8 @@ if __name__ == '__main__':
                                    device=device,
                                    encoder_dim=encoder_dim)
     decoder.load_state_dict(net_dict['decoder'])
-    decoder = DataParallel(decoder).to(device)
+    # decoder = DataParallel(decoder).to(device)
+    decoder.to(device)
 
 
     test_dataset = TestDataset(test, transform=get_transforms(data='valid'))
