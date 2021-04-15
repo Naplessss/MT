@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
 
     test_dataset = TestDataset(test, transform=get_transforms(data='valid'))
-    test_loader = DataLoader(test_dataset, batch_size=CGF.batch_size, shuffle=False, num_workers=CFG.num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=CFG.batch_size, shuffle=False, num_workers=CFG.num_workers)
     predictions = inference(test_loader, encoder, decoder, tokenizer, device)
 
     # submission
