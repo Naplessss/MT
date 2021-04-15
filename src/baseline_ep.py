@@ -61,6 +61,7 @@ parser.add_argument('--local_rank', default=-1, type=int)
 parser.add_argument('--nodes', default=1, type=int)
 parser.add_argument('--tmax', default=4, type=int)
 parser.add_argument('--debug', default=0, type=int)
+parser.add_argument('--epochs', default=20, type=int)
 args = parser.parse_args()
 
 if args.nodes > 1:
