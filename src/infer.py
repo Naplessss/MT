@@ -76,7 +76,10 @@ class CFG:
 
 CFG = CFG()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-test = pd.read_csv('../sample_submission.csv')
+test = pd.read_csv('../sub.csv')   # need to sort by length
+test['InChI_length'] = test['InChI'].map(len)
+test = test.sort_values(by=['InChI_length'])
+test = test.drop(columns=['InChI_length'])
 
 def get_test_file_path(image_id):
     return "../test/{}/{}/{}/{}.png".format(
@@ -185,10 +188,8 @@ if __name__ == '__main__':
     net_dict = load_weight()
     encoder = Encoder(CFG.model_name, pretrained=False)
     encoder.load_state_dict(net_dict['encoder'])
-    encoder_dim = encoder.n_features
-    # encoder = DataParallel(encoder).to(device)
     encoder.to(device)
-
+    encoder_dim = encoder.n_features
 
     decoder = DecoderWithAttention(attention_dim=CFG.attention_dim,
                                    embed_dim=CFG.embed_dim,
@@ -198,8 +199,7 @@ if __name__ == '__main__':
                                    device=device,
                                    encoder_dim=encoder_dim)
     decoder.load_state_dict(net_dict['decoder'])
-    # decoder = DataParallel(decoder).to(device)
-    decoder.to(device)
+    decoder = DataParallel(decoder).to(device)
 
 
     test_dataset = TestDataset(test, transform=get_transforms(data='valid'))
@@ -209,5 +209,5 @@ if __name__ == '__main__':
     # submission
     test['InChI'] = [f"{text}" for text in predictions]
     # test[['image_id', 'InChI']].to_csv(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}/{CGF.weight_path}_sub.csv', index=False)
-    test[['image_id', 'InChI']].to_csv(f'../output/{CFG.weight_name}_sub.csv', index=False)
+    test[['image_id', 'InChI']].to_csv(f'../output/{CFG.weight_name}_beam_{CFG.beam_size}_sub.csv', index=False)
     print(test[['image_id', 'InChI']].head())
