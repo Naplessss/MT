@@ -93,7 +93,7 @@ class CFG:
     #T_0=4 # CosineAnnealingWarmRestarts
     encoder_lr=args.encoder_lr
     decoder_lr=args.decoder_lr
-    min_lr=1e-6
+    min_lr=args.min_lr
     batch_size=args.batch_size_per_node
     weight_decay=1e-6
     gradient_accumulation_steps=1
