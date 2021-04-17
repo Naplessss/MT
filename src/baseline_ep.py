@@ -85,7 +85,7 @@ class CFG:
     meta_info=args.meta_info
     size=args.size
     scheduler='CosineAnnealingLR' # ['ReduceLROnPlateau', 'CosineAnnealingLR', 'CosineAnnealingWarmRestarts']
-    epochs=16
+    epochs=agrs.epochs
     #factor=0.2 # ReduceLROnPlateau
     #patience=4 # ReduceLROnPlateau
     #eps=1e-6 # ReduceLROnPlateau
