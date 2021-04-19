@@ -8,4 +8,4 @@ opencv_python_headless
 Levenshtein
 timm
 sklearn
-fairseq --use-feature=2020-resolver
+fairseq
