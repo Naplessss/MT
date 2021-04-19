@@ -30,7 +30,7 @@ class YNakamaTokenizer(object):
         self.itos = {}
 
         if is_load:
-            self.stoi = read_pickle_from_file(data_dir+'/tokenizer.pth')
+            self.stoi = read_pickle_from_file(data_dir+'/tokenizer.stoi.pickle')
             self.itos = {k: v for v, k in self.stoi.items()}
 
     def __len__(self):
