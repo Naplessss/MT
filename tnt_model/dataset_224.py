@@ -27,7 +27,7 @@ def make_fold(mode='train-1'):
     if 'train' in mode:
         df = read_pickle_from_file(data_dir+'/df_train.more.csv.pickle')
         df_fold = pd.read_csv(data_dir+'/df_fold.csv')
-        df = df.merge(df_fold, on='image_id')
+        df = pd.merge(df,df_fold, on='image_id',how='left')
         df.loc[:,'path']='train'
         df.loc[:, 'orientation'] = 0
 
