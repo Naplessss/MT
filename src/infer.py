@@ -209,5 +209,5 @@ if __name__ == '__main__':
     # submission
     test['InChI'] = [f"{text}" for text in predictions]
     # test[['image_id', 'InChI']].to_csv(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}/{CGF.weight_path}_sub.csv', index=False)
-    test[['image_id', 'InChI']].to_csv(f'../output/{CFG.weight_name}_beam_{CFG.beam_size}_sub.csv', index=False)
+    test[['image_id', 'InChI']].to_csv(f'../output/{CFG.weight_name}_beam_{CFG.k}_sub.csv', index=False)
     print(test[['image_id', 'InChI']].head())

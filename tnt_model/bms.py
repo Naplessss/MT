@@ -1,24 +1,24 @@
 from common import *
 import Levenshtein
 
-from rdkit import Chem
-from rdkit import RDLogger
-RDLogger.DisableLog('rdApp.*')
+# from rdkit import Chem
+# from rdkit import RDLogger
+# RDLogger.DisableLog('rdApp.*')
 
-data_dir = '/home/covpreduser/MT'
+data_dir = '../'
 #https://www.kaggle.com/nofreewill/normalize-your-predictions
 
-def normalize_inchi(inchi):
-    try:
-        mol = Chem.MolFromInchi(inchi)
-        if mol is not None:
-            try:
-                inchi = Chem.MolToInchi(mol)
-            except:
-                pass
-    except:
-        pass
-    return inchi
+# def normalize_inchi(inchi):
+#     try:
+#         mol = Chem.MolFromInchi(inchi)
+#         if mol is not None:
+#             try:
+#                 inchi = Chem.MolToInchi(mol)
+#             except:
+#                 pass
+#     except:
+#         pass
+#     return inchi
 
 
 # -----------------------------------------------------------------------
@@ -30,7 +30,7 @@ class YNakamaTokenizer(object):
         self.itos = {}
 
         if is_load:
-            self.stoi = read_pickle_from_file(data_dir+'/tokenizer.stoi.pickle')
+            self.stoi = read_pickle_from_file(data_dir+'/tokenizer.pth')
             self.itos = {k: v for v, k in self.stoi.items()}
 
     def __len__(self):
