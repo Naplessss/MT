@@ -8,7 +8,7 @@ import os
 from albumentations import (
     Compose, OneOf, Normalize, Resize, RandomResizedCrop, RandomCrop, HorizontalFlip, VerticalFlip,
     RandomBrightness, RandomContrast, RandomBrightnessContrast, Rotate, ShiftScaleRotate, Cutout,
-    IAAAdditiveGaussianNoise, Transpose, Blur
+    IAAAdditiveGaussianNoise, Transpose, Blur, RandomRotate90
     )
 from albumentations.pytorch import ToTensorV2
 from albumentations import ImageOnlyTransform
