@@ -151,8 +151,8 @@ def run_train():
         net = AmpNet().cuda()
     else:
         net = Net().cuda()
-        
-    net = nn.DataParallel(net) 
+
+    net = nn.DataParallel(net)
 
     if initial_checkpoint is not None:
         f = torch.load(initial_checkpoint, map_location=lambda storage, loc: storage)

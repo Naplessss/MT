@@ -1,6 +1,11 @@
 from common import *
 from bms import *
 from configure import *
+from albumentations import (
+    Compose, OneOf, Normalize, Resize, RandomResizedCrop, RandomCrop, HorizontalFlip, VerticalFlip,
+    RandomBrightness, RandomContrast, RandomBrightnessContrast, Rotate, ShiftScaleRotate, Cutout,
+    IAAAdditiveGaussianNoise, Transpose, Blur, RandomRotate90
+    )
 
 #from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
 
@@ -104,6 +109,15 @@ def remote_unrotate_augment(r):
 
 def null_augment(r):
     image = r['image']
+    image = cv2.resize(image, dsize=(image_size,image_size), interpolation=cv2.INTER_LINEAR)
+    assert image_size==224
+    r['image'] = image
+    return r
+
+def roation_augment(r):
+    image = r['image']
+    aug = RandomRotate90(p=0.5)
+    image = aug(image)
     image = cv2.resize(image, dsize=(image_size,image_size), interpolation=cv2.INTER_LINEAR)
     assert image_size==224
     r['image'] = image

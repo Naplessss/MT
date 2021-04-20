@@ -117,8 +117,8 @@ def run_train():
     df_train, df_valid = make_fold('train-%d' % fold)
 
     tokenizer = load_tokenizer()
-    train_dataset = BmsDataset(df_train,tokenizer)
-    valid_dataset = BmsDataset(df_valid,tokenizer)
+    train_dataset = BmsDataset(df_train,tokenizer,roation_augment)
+    valid_dataset = BmsDataset(df_valid,tokenizer,roation_augment)
 
     train_loader = DataLoader(
         train_dataset,
