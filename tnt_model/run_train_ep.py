@@ -25,10 +25,14 @@ if is_mixed_precision:
 else:
     AmpNet = Net
 
-
-
-
 ###################################################################################################
+
+import argparse
+parser = argparse.ArgumentParser(description='TNT')
+parser.add_argument('--exp', default='TNT-s-224')
+parser.add_argument('--fold', default=3, type=int)
+args = parser.parse_args()
+
 
 def do_valid(net, tokenizer, valid_loader):
 
@@ -92,8 +96,7 @@ def do_valid(net, tokenizer, valid_loader):
 
 def run_train():
     fold = 3
-    out_dir = \
-        '/mnt/epblob/zhgao/MT/TNT-s-224/fold%d' % fold
+    out_dir = f'/mnt/epblob/zhgao/MT/{args.exp}/fold{args.fold}'
     initial_checkpoint = None
     debug = 0
     start_lr = 0.0001# 1
@@ -132,7 +135,7 @@ def run_train():
     valid_loader = DataLoader(
         valid_dataset,
         #sampler=SequentialSampler(valid_dataset),
-        sampler=FixNumSampler(valid_dataset, 10_000), #200_000
+        sampler=FixNumSampler(valid_dataset, 50_000), #200_000
         batch_size=32,
         drop_last=False,
         num_workers=4,
