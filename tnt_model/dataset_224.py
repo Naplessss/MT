@@ -114,10 +114,10 @@ def null_augment(r):
     r['image'] = image
     return r
 
-def roation_augment(r):
+def rotation_augment(r):
     image = r['image']
     aug = RandomRotate90(p=0.5)
-    image = aug(image)
+    image = aug(image = image)['image']
     image = cv2.resize(image, dsize=(image_size,image_size), interpolation=cv2.INTER_LINEAR)
     assert image_size==224
     r['image'] = image
