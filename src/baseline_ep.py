@@ -135,6 +135,7 @@ def get_transforms(*, data):
     if data == 'train':
         return Compose([
             Resize(CFG.size, CFG.size),
+            RandomRotate90(p=0.5),
             Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
@@ -145,6 +146,7 @@ def get_transforms(*, data):
     elif data == 'valid':
         return Compose([
             Resize(CFG.size, CFG.size),
+            RandomRotate90(p=0.5),
             Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
@@ -326,7 +328,6 @@ def train_loop(folds, fold):
     valid_labels = valid_folds['InChI'].values
 
     train_dataset = TrainDataset(train_folds, tokenizer, transform=get_transforms(data='train'))
-    # valid_dataset = TestDataset(valid_folds, transform=get_transforms(data='valid'))
     valid_dataset = TrainDataset(valid_folds, tokenizer, transform=get_transforms(data='valid'))
 
     train_loader = DataLoader(train_dataset,

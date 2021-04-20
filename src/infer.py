@@ -100,6 +100,7 @@ def get_transforms(*, data):
     if data == 'train':
         return Compose([
             Resize(CFG.size, CFG.size),
+            RandomRotate90(p=0.5),
             Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
@@ -108,6 +109,17 @@ def get_transforms(*, data):
         ])
 
     elif data == 'valid':
+        return Compose([
+            Resize(CFG.size, CFG.size),
+            RandomRotate90(p=0.5),
+            Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+            ToTensorV2(),
+        ])
+
+    elif data == 'test':
         return Compose([
             Resize(CFG.size, CFG.size),
             Normalize(
@@ -202,7 +214,7 @@ if __name__ == '__main__':
     decoder = DataParallel(decoder).to(device)
 
 
-    test_dataset = TestDataset(test, transform=get_transforms(data='valid'))
+    test_dataset = TestDataset(test, transform=get_transforms(data='test'))
     test_loader = DataLoader(test_dataset, batch_size=CFG.batch_size, shuffle=False, num_workers=CFG.num_workers)
     predictions = inference(test_loader, encoder, decoder, tokenizer, device)
 

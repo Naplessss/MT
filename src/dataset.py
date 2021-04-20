@@ -45,7 +45,7 @@ class TestDataset(Dataset):
         self.df = df
         self.file_paths = df['file_path'].values
         self.transform = transform
-        self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
+#        self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
 
     def __len__(self):
         return len(self.df)
@@ -54,9 +54,9 @@ class TestDataset(Dataset):
         file_path = self.file_paths[idx]
         image = cv2.imread(file_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        h, w, _ = image.shape
-        if h > w:
-            image = self.fix_transform(image=image)['image']
+        # h, w, _ = image.shape
+        # if h > w:
+        #     image = self.fix_transform(image=image)['image']
         if self.transform:
             augmented = self.transform(image=image)
             image = augmented['image']
