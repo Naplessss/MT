@@ -29,7 +29,7 @@ else:
 
 import argparse
 parser = argparse.ArgumentParser(description='TNT')
-parser.add_argument('--exp', default='TNT-s-224')
+parser.add_argument('--exp', default='TNT-s-224-aug')
 parser.add_argument('--fold', default=3, type=int)
 args = parser.parse_args()
 
