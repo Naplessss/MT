@@ -31,7 +31,7 @@ import argparse
 parser = argparse.ArgumentParser(description='TNT')
 parser.add_argument('--exp', default='TNT-s-224-aug')
 parser.add_argument('--fold', default=3, type=int)
-parser.add_argument('--chunk_size', default=50000, type=int)
+parser.add_argument('--chunk_size', default=10000, type=int)
 parser.add_argument('--valid_size', default=200000, type=int)
 args = parser.parse_args()
 
@@ -337,8 +337,8 @@ def run_train():
                 sum_train_loss[...] = 0
                 sum_train = 0
 
-            print('\r', end='', flush=True)
-            print(message(mode='print'), end='', flush=True)
+            # print('\r', end='', flush=True)
+            # print(message(mode='print'), end='', flush=True)
 
             # debug--------------------------
             if debug:

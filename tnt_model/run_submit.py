@@ -34,17 +34,17 @@ def fast_remote_unrotate_augment(r):
     index = r['index']
     h, w = image.shape
 
-    # if h > w:
-    #     image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    l= r['d'].orientation
-    if l == 1:
-        image = np.rot90(image, -1)
-    if l == 2:
-        image = np.rot90(image, 1)
-    if l == 3:
-        image = np.rot90(image, 2)
+    if h > w:
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    # l= r['d'].orientation
+    # if l == 1:
+    #     image = np.rot90(image, -1)
+    # if l == 2:
+    #     image = np.rot90(image, 1)
+    # if l == 3:
+    #     image = np.rot90(image, 2)
 
-    #image = cv2.resize(image, dsize=(image_size,image_size), interpolation=cv2.INTER_LINEAR)
+    image = cv2.resize(image, dsize=(image_size,image_size), interpolation=cv2.INTER_LINEAR)
     assert (image_size==224)
 
 
