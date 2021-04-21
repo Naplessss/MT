@@ -6,6 +6,7 @@ import Levenshtein
 # RDLogger.DisableLog('rdApp.*')
 
 data_dir = '../'
+# data_dir = '/home/covpreduser/MT'
 #https://www.kaggle.com/nofreewill/normalize-your-predictions
 
 # def normalize_inchi(inchi):

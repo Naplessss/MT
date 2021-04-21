@@ -31,10 +31,12 @@ import argparse
 parser = argparse.ArgumentParser(description='TNT')
 parser.add_argument('--exp', default='TNT-s-224-aug')
 parser.add_argument('--fold', default=3, type=int)
+parser.add_argument('--chunk_size', default=50000, type=int)
+parser.add_argument('--valid_size', default=200000, type=int)
 args = parser.parse_args()
 
 
-def do_valid(net, tokenizer, valid_loader):
+def do_valid_old(net, tokenizer, valid_loader):
 
     valid_probability = []
     valid_truth = []
@@ -82,8 +84,8 @@ def do_valid(net, tokenizer, valid_loader):
     if 1:
         score = []
         for i, (p, t) in enumerate(zip(predict, truth)):
-            t = truth[i][1:length[i]-1]     # in the buggy version, i have used 1 instead of i
-            p = predict[i][1:length[i]-1]
+            t = t[1:]
+            p = p[1:]
             t = tokenizer.one_predict_to_inchi(t)
             p = tokenizer.one_predict_to_inchi(p)
             s = Levenshtein.distance(p, t)
@@ -93,10 +95,49 @@ def do_valid(net, tokenizer, valid_loader):
     #lb_score = compute_lb_score(k, t)
     return [loss, lb_score]
 
+def do_valid(net, tokenizer, valid_loader):
+
+    valid_truth = []
+    valid_predict = []
+
+    net.eval()
+    start_timer = timer()
+    for t, batch in enumerate(valid_loader):
+        batch_size = len(batch['index'])
+        image  = batch['image' ].cuda()
+        token  = batch['token' ].cuda()
+        length = batch['length']
+
+        with torch.no_grad():
+            with amp.autocast():
+                if hasattr(net, 'module'):
+                    p = net.module.forward_argmax_decode(image)
+                else:
+                    p = net.forward_argmax_decode(image)
+                p = p.data.cpu().numpy()
+                p = tokenizer.predict_to_inchi(p)
+                t = [item[1:] for item in token.data.cpu().numpy()]
+                t = tokenizer.predict_to_inchi(t)
+
+        valid_truth.extend(t)
+        valid_predict.extend(p)
+
+    #----
+    lb_score = 0
+    if 1:
+        score = []
+        for i, (p, t) in enumerate(zip(valid_predict, valid_truth)):
+            s = Levenshtein.distance(p, t)
+            score.append(s)
+        lb_score = np.mean(score)
+
+    #lb_score = compute_lb_score(k, t)
+    return [0.0, lb_score]
 
 def run_train():
     fold = 3
     out_dir = f'/mnt/epblob/zhgao/MT/{args.exp}/fold{args.fold}'
+    # out_dir = f'/home/covpreduser/MT/{args.exp}/fold{args.fold}'
     initial_checkpoint = None
     debug = 0
     start_lr = 0.0001# 1
@@ -135,7 +176,7 @@ def run_train():
     valid_loader = DataLoader(
         valid_dataset,
         #sampler=SequentialSampler(valid_dataset),
-        sampler=FixNumSampler(valid_dataset, 50_000), #200_000
+        sampler=FixNumSampler(valid_dataset, args.valid_size), #200_000
         batch_size=32,
         drop_last=False,
         num_workers=4,
@@ -177,9 +218,10 @@ def run_train():
     # optimizer = RAdam(filter(lambda p: p.requires_grad, net.parameters()),lr=start_lr)
 
     num_iteration = 80000 * 1000
-    iter_log = 1000
-    iter_valid = 1000
-    iter_save = list(range(0, num_iteration, 1000))  # 1*1000
+    chunk_size = args.chunk_size
+    iter_log = chunk_size
+    iter_valid = chunk_size
+    iter_save = list(range(0, num_iteration, chunk_size))  # 1*100
 
     log.write('optimizer\n  %s\n' % (optimizer))
     log.write('\n')
