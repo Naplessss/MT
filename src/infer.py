@@ -77,9 +77,9 @@ class CFG:
 CFG = CFG()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 test = pd.read_csv('../sub.csv')   # need to sort by length
-# test['InChI_length'] = test['InChI'].map(len)
-# test = test.sort_values(by=['InChI_length'])
-# test = test.drop(columns=['InChI_length']).reset_index(drop=True)
+test['InChI_length'] = test['InChI'].map(len)
+test = test.sort_values(by=['InChI_length'])
+test = test.drop(columns=['InChI_length']).reset_index(drop=True)
 
 def get_test_file_path(image_id):
     return "../test/{}/{}/{}/{}.png".format(
