@@ -51,7 +51,7 @@ from utils import AverageMeter, asMinutes, timeSince
 import argparse
 parser = argparse.ArgumentParser(description='CNN-LSTM')
 parser.add_argument('--model_name', default='efficientnet_b3_pruned')
-parser.add_argument('--weight_name', default='efficientnet_b3_pruned_bs32x8_size320_epoch_12_fold_0_cv_2.9199962615966797.pth')
+parser.add_argument('--weight_name', default='efficientnet_b3_pruned_bs32x8_size320_v5_epoch_19_fold_0_cv_2.010636568069458.pth')
 parser.add_argument('--beam_size', default=2, type=int)
 parser.add_argument('--size', default=224, type=int)
 parser.add_argument('--batch_size', default=32, type=int)
