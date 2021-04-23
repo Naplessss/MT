@@ -45,7 +45,7 @@ class TestDataset(Dataset):
         self.df = df
         self.file_paths = df['file_path'].values
         self.transform = transform
-#        self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
+        self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
 
     def __len__(self):
         return len(self.df)
