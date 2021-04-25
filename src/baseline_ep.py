@@ -314,6 +314,9 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         features = self.cnn.forward_features(x)
+        if len(features.size())==2:
+            bs = features.size(0)
+            features = features.view(bs,self.n_features,1,1)
         features = features.permute(0, 2, 3, 1)
         return features
 
