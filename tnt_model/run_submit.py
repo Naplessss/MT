@@ -100,9 +100,9 @@ def run_submit():
 
     fold = 3
     out_dir = \
-        '/root/share1/kaggle/2021/bms-moleular-translation/result/try10/tnt-s-224-fairseq/fold%d' % fold
+        '/home/covpreduser/Blob/zhgao/MT/weights/TNT-s-224-aug/'
     initial_checkpoint = \
-        out_dir + '/checkpoint/00266000_model.pth'#
+        out_dir + '00482000_model.pth'#
 
     is_norm_ichi = False #True
     if 1:
@@ -172,8 +172,8 @@ def run_submit():
             #predict = read_pickle_from_file(submit_dir + '/predict.pickle')
 
         #----
-        if is_norm_ichi:
-            predict = [normalize_inchi(t) for t in predict]  #
+        # if is_norm_ichi:
+        #     predict = [normalize_inchi(t) for t in predict]  #
 
         df_submit = pd.DataFrame()
         df_submit.loc[:,'image_id'] = df_valid.image_id.values
@@ -226,7 +226,7 @@ def cat_submit():
 if __name__ == '__main__':
     run_submit()
 
-''' 
+'''
 40000 / 40000   7 min 58 sec
 [40000 rows x 2 columns]
 lb_score  = 1.964150
@@ -240,7 +240,7 @@ is_norm_ichi = False
 
 
 00298000_model
-[10000 rows x 2 columns] 
+[10000 rows x 2 columns]
 lb_score  = 1.890700
 is_norm_ichi = False
 '''
