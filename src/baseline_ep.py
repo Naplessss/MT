@@ -62,6 +62,7 @@ parser.add_argument('--nodes', default=1, type=int)
 parser.add_argument('--tmax', default=4, type=int)
 parser.add_argument('--debug', default=0, type=int)
 parser.add_argument('--epochs', default=20, type=int)
+parser.add_argument('--local', default=0, type=int)
 args = parser.parse_args()
 
 if args.nodes > 1:
@@ -118,8 +119,12 @@ if CFG.debug:
     CFG.epochs = 10
     train = train.sample(n=1000, random_state=CFG.seed).reset_index(drop=True)
 
-os.makedirs(f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
-LOGGER = init_logger(log_file=f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}.log')
+if args.local:
+    os.makedirs(f'../logs/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
+    LOGGER = init_logger(log_file=f'../logs/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}.log')
+else:
+    os.makedirs(f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
+    LOGGER = init_logger(log_file=f'/mnt/epblob/zhgao/MT/logs/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}.log')
 seed_torch(seed=CFG.seed)
 
 folds = train.copy()
@@ -296,14 +301,16 @@ class Encoder(nn.Module):
     def __init__(self, model_name='resnet18', pretrained=False):
         super().__init__()
         self.cnn = timm.create_model(model_name, pretrained=pretrained)
-        if hasattr(self.cnn, 'classifier'): # effb
+        if model_name.startswith('swin'): # swintransformer
+            self.n_features = self.cnn.head.in_features
+        elif hasattr(self.cnn, 'classifier'): # effb
             self.n_features = self.cnn.classifier.in_features
         elif hasattr(self.cnn, 'head'): #nfnet
             self.n_features = self.cnn.head.fc.in_features
         elif hasattr(self.cnn, 'fc'):   # resnet
             self.n_features = self.cnn.fc.in_features
         else:
-            self.n_features = 3072
+            self.n_features = self.cnn.head.in_features
 
     def forward(self, x):
         features = self.cnn.forward_features(x)
@@ -429,7 +436,11 @@ def train_loop(folds, fold):
         if global_rank == 0:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  time: {elapsed:.0f}s')
             LOGGER.info(f'Epoch {epoch+1} - Score: {score:.4f}')
-            os.makedirs(f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
+            if args.local:
+                save_path = f'../weights/{CFG.model_name}_{CFG.meta_info}'
+            else:
+                save_path = f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}'
+            os.makedirs(f'{save_path}/{CFG.model_name}_{CFG.meta_info}', exist_ok=True)
             if score < best_score:
                 best_score = score
                 LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f} Model')
@@ -440,7 +451,7 @@ def train_loop(folds, fold):
                             'decoder_optimizer': decoder_optimizer.state_dict(),
                             'decoder_scheduler': decoder_scheduler.state_dict(),
                             },
-                            f'/mnt/epblob/zhgao/MT/weights/{CFG.model_name}_{CFG.meta_info}/{CFG.model_name}_{CFG.meta_info}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
+                            f'{save_path}/{CFG.model_name}_{CFG.meta_info}_epoch_{epoch}_fold_{fold}_cv_{best_score}.pth')
         dist.barrier()
 
 def main():

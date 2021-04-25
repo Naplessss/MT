@@ -32,7 +32,10 @@ parser = argparse.ArgumentParser(description='TNT')
 parser.add_argument('--exp', default='TNT-s-224-aug')
 parser.add_argument('--fold', default=3, type=int)
 parser.add_argument('--chunk_size', default=10000, type=int)
-parser.add_argument('--valid_size', default=200000, type=int)
+parser.add_argument('--valid_size', default=50000, type=int)
+parser.add_argument('--batch_size', default=64, type=int)
+parser.add_argument('--learning_rate', default=0.0001, type=float)
+parser.add_argument('--image_size', default=224, type=int)
 args = parser.parse_args()
 
 
@@ -140,8 +143,8 @@ def run_train():
     # out_dir = f'/home/covpreduser/MT/{args.exp}/fold{args.fold}'
     initial_checkpoint = None
     debug = 0
-    start_lr = 0.0001# 1
-    batch_size = 32*4   # 24
+    start_lr = args.learning_rate
+    batch_size = args.batch_size
 
 
     ## setup  ----------------------------------------
