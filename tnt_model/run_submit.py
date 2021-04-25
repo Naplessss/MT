@@ -156,18 +156,15 @@ def run_submit():
         if 1:
             tokenizer = load_tokenizer()
             net = AmpNet().cuda()
-            def load_weight(checkpoint, key_list):
+            def load_weight(checkpoint, key):
                 net_dict = torch.load(checkpoint, map_location=lambda storage, loc: storage)
-                if isinstance(key_list, str):
-                    key_list == [key_list]
-                for key in key_list:
-                    new_state_dict = OrderedDict()
-                    for k,v in net_dict[key].items():
-                        if k.startswith('module.'):
-                            new_state_dict[k[7:]] = v
-                        else:
-                            new_state_dict[k] = v
-                        net_dict[key] = new_state_dict
+                new_state_dict = OrderedDict()
+                for k,v in net_dict[key].items():
+                    if k.startswith('module.'):
+                        new_state_dict[k[7:]] = v
+                    else:
+                        new_state_dict[k] = v
+                    net_dict[key] = new_state_dict
                 return net_dict
             net.load_state_dict(load_weight(initial_checkpoint, 'state_dict'))
             net = torch.jit.script(net)
