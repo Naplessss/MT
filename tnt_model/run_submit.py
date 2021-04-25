@@ -158,7 +158,9 @@ def run_submit():
             net = AmpNet().cuda()
             def load_weight(checkpoint, key_list):
                 net_dict = torch.load(checkpoint, map_location=lambda storage, loc: storage)
-                for key in [key]:
+                if isinstance(key_list, str):
+                    key_list == [key_list]
+                for key in key_list:
                     new_state_dict = OrderedDict()
                     for k,v in net_dict[key].items():
                         if k.startswith('module.'):
