@@ -36,7 +36,7 @@ parser.add_argument('--valid_size', default=200000, type=int)
 args = parser.parse_args()
 
 
-def do_valid_old(net, tokenizer, valid_loader):
+def do_valid_teacher_force(net, tokenizer, valid_loader):
 
     valid_probability = []
     valid_truth = []
@@ -281,7 +281,7 @@ def run_train():
 
             if (iteration % iter_valid == 0):
                 if iteration != start_iteration:
-                    valid_loss = do_valid(net, tokenizer, valid_loader)  #
+                    valid_loss = teacher_force(net, tokenizer, valid_loader)  #
                     pass
 
             if (iteration % iter_log == 0):
