@@ -165,7 +165,7 @@ def run_submit():
                     else:
                         new_state_dict[k] = v
                     net_dict[key] = new_state_dict
-                return net_dict
+                return net_dict[key]
             net.load_state_dict(load_weight(initial_checkpoint, 'state_dict'))
             net = torch.jit.script(net)
 
