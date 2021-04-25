@@ -39,7 +39,7 @@ parser.add_argument('--image_size', default=224, type=int)
 args = parser.parse_args()
 
 
-def do_valid_teacher_force(net, tokenizer, valid_loader):
+def do_valid_teach_force(net, tokenizer, valid_loader):
 
     valid_probability = []
     valid_truth = []
@@ -284,7 +284,7 @@ def run_train():
 
             if (iteration % iter_valid == 0):
                 if iteration != start_iteration:
-                    valid_loss = teacher_force(net, tokenizer, valid_loader)  #
+                    valid_loss = do_valid_teach_force(net, tokenizer, valid_loader)  #
                     pass
 
             if (iteration % iter_log == 0):
