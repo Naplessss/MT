@@ -340,15 +340,17 @@ def train_loop(folds, fold):
     train_dataset = TrainDataset(train_folds, tokenizer, transform=get_transforms(data='train'))
     valid_dataset = TrainDataset(valid_folds, tokenizer, transform=get_transforms(data='valid'))
 
+    train_sampler = DistributedSampler(train_dataset, shuffle=True)
+    valid_sampler = DistributedSampler(valid_dataset, shuffle=False)
     train_loader = DataLoader(train_dataset,
-                              sampler = DistributedSampler(train_dataset, shuffle=True),
+                              sampler = train_sampler,
                               batch_size=CFG.batch_size,
                               num_workers=CFG.num_workers,
                               pin_memory=True,
                               drop_last=True,
                               collate_fn=bms_collate)
     valid_loader = DataLoader(valid_dataset,
-                              sampler = DistributedSampler(valid_dataset, shuffle=False),
+                              sampler = valid_sampler,
                               batch_size=CFG.batch_size,
                               num_workers=CFG.num_workers,
                               pin_memory=True,
@@ -404,6 +406,7 @@ def train_loop(folds, fold):
     best_loss = np.inf
 
     for epoch in range(CFG.epochs):
+        train_sampler.set_epoch(epoch)
         print(f'START EPOCH{epoch}')
         start_time = time.time()
         # train
