@@ -24,8 +24,8 @@ def split_form2(form):
         num = i.replace(elem, "").replace('/', "")
         num_string = ''
         for j in re.findall(r"[0-9]+[^0-9]*", num):
-            num_list = list(re.findall(r'\d+', j))
-            assert len(num_list) == 1, f"len(num_list) != 1"
+            num_list = list(re.findall(r'/d+', j))
+            assert len(num_list) == 1, '_'.join(num_list) + form
             _num = num_list[0]
             if j == _num:
                 num_string += f"{_num} "
@@ -35,6 +35,29 @@ def split_form2(form):
         string += f"/{elem} {num_string}"
     return string.rstrip(' ')
 
+def split_form3(form):
+    string = ''
+    for i in re.findall(r"[a-z][^a-z]*", form):
+        elem = i[0]
+        num = i.replace(elem, "").replace('/', "")
+        num_string = '/'+elem if elem == 'c' else ' /'+elem
+        regx = re.compile("[A-Z]?[0-9]+")
+        char_list = regx.split(num)
+        num_list = regx.findall(num)
+        for i in range(len(num_list)):
+            _char = ' '.join(char_list[i])
+            _num = num_list[i]
+            if _char == '':
+                num_string += f" {_num}"
+            else:
+                num_string += f" {_char} {_num}"
+        last_char = ' '.join(char_list[-1])
+        if len(num_list) == 0 or len(char_list[-1])==1:
+            num_string += f" {last_char}"
+        else:
+            num_string += f"{last_char}"
+        string += num_string
+    return string
 # ====================================================
 # Tokenizer
 # ====================================================
@@ -107,7 +130,7 @@ def main():
     # ====================================================
     train['InChI_1'] = train['InChI'].progress_apply(lambda x: x.split('/')[1])
     train['InChI_text'] = train['InChI_1'].progress_apply(split_form) + ' ' + \
-                            train['InChI'].apply(lambda x: '/'.join(x.split('/')[2:])).progress_apply(split_form2).values
+                            train['InChI'].apply(lambda x: '/'.join(x.split('/')[2:])).progress_apply(split_form3).values
     # ====================================================
     # create tokenizer
     # ====================================================
