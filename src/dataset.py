@@ -95,6 +95,12 @@ class TrainDataset(Dataset):
     def __getitem__(self, idx):
         file_path = self.file_paths[idx]
         image = cv2.imread(file_path)
+        one_c = image[:,:,0]
+        kernel = np.ones((3,3),np.uint8)
+        one_c = cv2.erode(one_c,kernel,iterations=3)
+        image[:,:,1] = one_c
+        one_c = cv2.dilate(one_c,kernel,iterations=1)
+        image[:,:,2] = one_c
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         if self.transform:
             augmented = self.transform(image=image)
@@ -120,6 +126,12 @@ class TestDataset(Dataset):
     def __getitem__(self, idx):
         file_path = self.file_paths[idx]
         image = cv2.imread(file_path)
+        one_c = image[:,:,0]
+        kernel = np.ones((3,3),np.uint8)
+        one_c = cv2.erode(one_c,kernel,iterations=3)
+        image[:,:,1] = one_c
+        one_c = cv2.dilate(one_c,kernel,iterations=1)
+        image[:,:,2] = one_c
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         h, w, _ = image.shape
         if h > w:
