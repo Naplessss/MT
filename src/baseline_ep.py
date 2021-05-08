@@ -303,6 +303,8 @@ class Encoder(nn.Module):
         self.cnn = timm.create_model(model_name, pretrained=pretrained)
         if model_name.startswith('swin'): # swintransformer
             self.n_features = self.cnn.head.in_features
+        elif model_name.startswith('tnt'):  # TNT
+            self.n_features = self.cnn.head.in_features
         elif hasattr(self.cnn, 'classifier'): # effb
             self.n_features = self.cnn.classifier.in_features
         elif hasattr(self.cnn, 'head'): #nfnet
