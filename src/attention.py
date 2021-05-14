@@ -35,7 +35,7 @@ class DecoderWithAttention(nn.Module):
     Decoder network with attention network used for training
     """
 
-    def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, device, encoder_dim=512, dropout=0.5):
+    def __init__(self, attention_dim, embed_dim, decoder_dim, vocab_size, device, encoder_dim=512, dropout=0.5, pool_size=32):
         """
         :param attention_dim: input size of attention network
         :param embed_dim: input size of embedding network
@@ -61,6 +61,8 @@ class DecoderWithAttention(nn.Module):
         self.f_beta = nn.Linear(decoder_dim, encoder_dim)  # linear layer to create a sigmoid-activated gate
         self.sigmoid = nn.Sigmoid()
         self.fc = nn.Linear(decoder_dim, vocab_size)  # linear layer to find scores over vocabulary
+        self.pool_size = pool_size
+        self.pool = nn.AdaptiveAvgPool2d(pool_size)
         self.init_weights()  # initialize some layers with the uniform distribution
 
     def init_weights(self):
@@ -90,6 +92,9 @@ class DecoderWithAttention(nn.Module):
         batch_size = encoder_out.size(0)
         encoder_dim = encoder_out.size(-1)
         vocab_size = self.vocab_size
+        _,w,h,_ = encoder_out.size()
+        if w > self.pool_size and h > self.pool_size:
+            encoder_out = self.pool(encoder_out)
         encoder_out = encoder_out.view(batch_size, -1, encoder_dim)  # (batch_size, num_pixels, encoder_dim)
         num_pixels = encoder_out.size(1)
         caption_lengths, sort_ind = caption_lengths.squeeze(1).sort(dim=0, descending=True)
