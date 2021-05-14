@@ -21,7 +21,9 @@ class Attention(nn.Module):
 
     def forward(self, encoder_out, decoder_hidden):
         att1 = self.encoder_att(encoder_out)  # (batch_size, num_pixels, attention_dim)
+        att1 = torch.tanh(att1)
         att2 = self.decoder_att(decoder_hidden)  # (batch_size, attention_dim)
+        att2 = torch.tanh(att2)
         att = self.full_att(self.relu(att1 + att2.unsqueeze(1))).squeeze(2)  # (batch_size, num_pixels)
         alpha = self.softmax(att)  # (batch_size, num_pixels)
         attention_weighted_encoding = (encoder_out * alpha.unsqueeze(2)).sum(dim=1)  # (batch_size, encoder_dim)

@@ -22,7 +22,7 @@ from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim import Adam, SGD
+from torch.optim import Adam, SGD, AdamW
 import torchvision.models as models
 from torch.nn.parameter import Parameter
 from torch.utils.data import DataLoader, Dataset
@@ -137,6 +137,8 @@ for n, (train_index, val_index) in enumerate(Fold.split(folds, folds['InChI_leng
 folds['fold'] = folds['fold'].astype(int)
 if global_rank == 0:
     print(folds.groupby(['fold']).size())
+
+train_batchsize = (torch.distributed.get_world_size()*int(args.batch_size_per_node))
 
 def get_transforms(*, data):
 
@@ -285,6 +287,17 @@ def train_fn(train_loader,
             decoder_carbon_optimizer.zero_grad()
             decoder_hydrogen_optimizer.zero_grad()
 
+            if isinstance(encoder_scheduler, CosineAnnealingLR):
+                encoder_scheduler.step()
+            elif isinstance(encoder_scheduler, CosineAnnealingWarmRestarts):
+                encoder_scheduler.step()
+
+            for decoder_scheduler in [decoder_molecular_scheduler, decoder_carbon_scheduler, decoder_hydrogen_scheduler]:
+                if isinstance(decoder_scheduler, CosineAnnealingLR):
+                    decoder_scheduler.step()
+                elif isinstance(decoder_scheduler, CosineAnnealingWarmRestarts):
+                    decoder_scheduler.step()
+
             global_step += 1
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -400,6 +413,7 @@ class Encoder(nn.Module):
         features = features.permute(0, 2, 3, 1)
         return features
 
+
 # ====================================================
 # Train loop
 # ====================================================
@@ -444,7 +458,10 @@ def train_loop(folds, fold):
         if CFG.scheduler=='ReduceLROnPlateau':
             scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=CFG.factor, patience=CFG.patience, verbose=True, eps=CFG.eps)
         elif CFG.scheduler=='CosineAnnealingLR':
-            scheduler = CosineAnnealingLR(optimizer, T_max=CFG.T_max, eta_min=CFG.min_lr, last_epoch=-1)
+            # scheduler = CosineAnnealingLR(optimizer, T_max=CFG.T_max, eta_min=CFG.min_lr, last_epoch=-1)
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = int(0.5*len(train_loader)) , eta_min=(train_batchsize/128)*CFG.min_lr, last_epoch=-1)
+            for _ in range(int(0.5*len(train_loader))):
+                scheduler.step()
         elif CFG.scheduler=='CosineAnnealingWarmRestarts':
             scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=CFG.T_0, T_mult=1, eta_min=CFG.min_lr, last_epoch=-1)
         return scheduler
@@ -459,7 +476,8 @@ def train_loop(folds, fold):
     encoder = torch.nn.parallel.DistributedDataParallel(encoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     if global_rank == 0:
         print('encoder DDP finish')
-    encoder_optimizer = Adam(encoder.parameters(), lr=CFG.encoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
+
+    encoder_optimizer = AdamW(filter(lambda p: p.requires_grad, encoder.parameters()), lr=(train_batchsize/128)*CFG.encoder_lr, weight_decay=CFG.weight_decay)
     encoder_scheduler = get_scheduler(encoder_optimizer)
 
     def build_decoder():
@@ -472,7 +490,7 @@ def train_loop(folds, fold):
                                     encoder_dim=encoder_dim)
         decoder = nn.SyncBatchNorm.convert_sync_batchnorm(decoder).cuda().to(local_rank)
         decoder = torch.nn.parallel.DistributedDataParallel(decoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
-        decoder_optimizer = Adam(decoder.parameters(), lr=CFG.decoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
+        decoder_optimizer = AdamW(filter(lambda p: p.requires_grad, encoder.parameters()), lr=(train_batchsize/128)*CFG.decoder_lr, weight_decay=CFG.weight_decay)
         decoder_scheduler = get_scheduler(decoder_optimizer)
 
         return decoder, decoder_optimizer, decoder_scheduler
@@ -507,22 +525,6 @@ def train_loop(folds, fold):
                             local_rank)
         score = valid_fn(valid_loader, encoder, decoder_molecular_envs[0], decoder_carbon_envs[0], decoder_hydrogen_envs[0],
              tokenizer, criterion, local_rank)
-
-        if isinstance(encoder_scheduler, ReduceLROnPlateau):
-            encoder_scheduler.step(score)
-        elif isinstance(encoder_scheduler, CosineAnnealingLR):
-            encoder_scheduler.step()
-        elif isinstance(encoder_scheduler, CosineAnnealingWarmRestarts):
-            encoder_scheduler.step()
-
-        for decoder_envs in [decoder_molecular_envs, decoder_carbon_envs, decoder_hydrogen_envs]:
-            decoder_scheduler = decoder_envs[2]
-            if isinstance(decoder_scheduler, ReduceLROnPlateau):
-                decoder_scheduler.step(score)
-            elif isinstance(decoder_scheduler, CosineAnnealingLR):
-                decoder_scheduler.step()
-            elif isinstance(decoder_scheduler, CosineAnnealingWarmRestarts):
-                decoder_scheduler.step()
 
         elapsed = time.time() - start_time
         if global_rank == 0:
