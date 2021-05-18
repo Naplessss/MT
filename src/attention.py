@@ -18,12 +18,16 @@ class Attention(nn.Module):
         self.full_att = nn.Linear(attention_dim, 1)  # linear layer to calculate values to be softmax-ed
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)  # softmax layer to calculate weights
+        self.layer_norm_1 = nn.LayerNorm(attention_dim)
+        self.layer_norm_2 = nn.LayerNorm(attention_dim)
 
     def forward(self, encoder_out, decoder_hidden):
         att1 = self.encoder_att(encoder_out)  # (batch_size, num_pixels, attention_dim)
-        att1 = torch.tanh(att1)
+        # att1 = torch.tanh(att1)
+        att1 = self.layer_norm_1(att1)
         att2 = self.decoder_att(decoder_hidden)  # (batch_size, attention_dim)
-        att2 = torch.tanh(att2)
+        # att2 = torch.tanh(att2)
+        att2 = self.layer_norm_2(att2)
         att = self.full_att(self.relu(att1 + att2.unsqueeze(1))).squeeze(2)  # (batch_size, num_pixels)
         alpha = self.softmax(att)  # (batch_size, num_pixels)
         attention_weighted_encoding = (encoder_out * alpha.unsqueeze(2)).sum(dim=1)  # (batch_size, encoder_dim)
