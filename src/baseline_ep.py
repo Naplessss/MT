@@ -22,7 +22,7 @@ from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim import Adam, SGD
+from torch.optim import Adam, SGD, AdamW
 import torchvision.models as models
 from torch.nn.parameter import Parameter
 from torch.utils.data import DataLoader, Dataset
@@ -54,9 +54,9 @@ parser.add_argument('--model_name', default='resnet34')
 parser.add_argument('--meta_info', default='v0')
 parser.add_argument('--size', default=224, type=int)
 parser.add_argument('--batch_size_per_node', default=32, type=int)
-parser.add_argument('--encoder_lr', default=1e-4, type=float)
-parser.add_argument('--decoder_lr', default=4e-4, type=float)
-parser.add_argument('--min_lr', default=1e-6, type=float)
+parser.add_argument('--encoder_lr', default=1e-3, type=float)
+parser.add_argument('--decoder_lr', default=1e-3, type=float)
+parser.add_argument('--min_lr', default=1e-5, type=float)
 parser.add_argument('--local_rank', default=-1, type=int)
 parser.add_argument('--nodes', default=1, type=int)
 parser.add_argument('--tmax', default=4, type=int)
@@ -80,7 +80,7 @@ print('cur rank',local_rank,'global_rank', global_rank)
 class CFG:
     debug=False if args.debug==0 else True
     max_len=275
-    print_freq=1000
+    print_freq=1
     num_workers=6
     model_name=args.model_name
     meta_info=args.meta_info
@@ -134,6 +134,8 @@ for n, (train_index, val_index) in enumerate(Fold.split(folds, folds['InChI_leng
 folds['fold'] = folds['fold'].astype(int)
 if global_rank == 0:
     print(folds.groupby(['fold']).size())
+train_batchsize = (torch.distributed.get_world_size()*int(args.batch_size_per_node))
+
 
 def get_transforms(*, data):
 
@@ -213,6 +215,17 @@ def train_fn(train_loader, encoder, decoder, criterion,
             decoder_optimizer.step()
             encoder_optimizer.zero_grad()
             decoder_optimizer.zero_grad()
+
+            if isinstance(encoder_scheduler, CosineAnnealingLR):
+                encoder_scheduler.step()
+            elif isinstance(encoder_scheduler, CosineAnnealingWarmRestarts):
+                encoder_scheduler.step()
+
+            if isinstance(decoder_scheduler, CosineAnnealingLR):
+                decoder_scheduler.step()
+            elif isinstance(decoder_scheduler, CosineAnnealingWarmRestarts):
+                decoder_scheduler.step()
+
             global_step += 1
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -225,16 +238,16 @@ def train_fn(train_loader, encoder, decoder, criterion,
                     'Loss: {loss.val:.4f}({loss.avg:.4f}) '
                     'Encoder Grad: {encoder_grad_norm:.4f}  '
                     'Decoder Grad: {decoder_grad_norm:.4f}  '
-                    #'Encoder LR: {encoder_lr:.6f}  '
-                    #'Decoder LR: {decoder_lr:.6f}  '
+                    'Encoder LR: {encoder_lr:.6f}  '
+                    'Decoder LR: {decoder_lr:.6f}  '
                     .format(
                     epoch+1, step, len(train_loader), batch_time=batch_time,
                     data_time=data_time, loss=losses,
                     remain=timeSince(start, float(step+1)/len(train_loader)),
                     encoder_grad_norm=encoder_grad_norm,
                     decoder_grad_norm=decoder_grad_norm,
-                    #encoder_lr=encoder_scheduler.get_lr()[0],
-                    #decoder_lr=decoder_scheduler.get_lr()[0],
+                    encoder_lr=encoder_scheduler.get_lr()[0],
+                    decoder_lr=decoder_scheduler.get_lr()[0],
                     ))
     return losses.avg
 
@@ -366,7 +379,10 @@ def train_loop(folds, fold):
         if CFG.scheduler=='ReduceLROnPlateau':
             scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=CFG.factor, patience=CFG.patience, verbose=True, eps=CFG.eps)
         elif CFG.scheduler=='CosineAnnealingLR':
-            scheduler = CosineAnnealingLR(optimizer, T_max=CFG.T_max, eta_min=CFG.min_lr, last_epoch=-1)
+            # scheduler = CosineAnnealingLR(optimizer, T_max=CFG.T_max, eta_min=CFG.min_lr, last_epoch=-1)
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = int(0.5*len(train_loader)) , eta_min=(train_batchsize/128)*CFG.min_lr, last_epoch=-1)
+            for _ in range(int(0.5*len(train_loader))):
+                scheduler.step()
         elif CFG.scheduler=='CosineAnnealingWarmRestarts':
             scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=CFG.T_0, T_mult=1, eta_min=CFG.min_lr, last_epoch=-1)
         return scheduler
@@ -381,7 +397,7 @@ def train_loop(folds, fold):
     encoder = torch.nn.parallel.DistributedDataParallel(encoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     if global_rank == 0:
         print('encoder DDP finish')
-    encoder_optimizer = Adam(encoder.parameters(), lr=CFG.encoder_lr, weight_decay=CFG.weight_decay, amsgrad=False)
+    encoder_optimizer = AdamW(filter(lambda p: p.requires_grad, encoder.parameters()), lr=(train_batchsize/128)*CFG.encoder_lr, weight_decay=CFG.weight_decay)
     encoder_scheduler = get_scheduler(encoder_optimizer)
 
     decoder = DecoderWithAttention(attention_dim=CFG.attention_dim,
@@ -426,19 +442,6 @@ def train_loop(folds, fold):
         # net_dict = torch.load(f'{CFG.model_name}_cache.pth')
         # encoder.load_state_dict(net_dict['encoder'])
         # decoder.load_state_dict(net_dict['decoder'])
-        if isinstance(encoder_scheduler, ReduceLROnPlateau):
-            encoder_scheduler.step(score)
-        elif isinstance(encoder_scheduler, CosineAnnealingLR):
-            encoder_scheduler.step()
-        elif isinstance(encoder_scheduler, CosineAnnealingWarmRestarts):
-            encoder_scheduler.step()
-
-        if isinstance(decoder_scheduler, ReduceLROnPlateau):
-            decoder_scheduler.step(score)
-        elif isinstance(decoder_scheduler, CosineAnnealingLR):
-            decoder_scheduler.step()
-        elif isinstance(decoder_scheduler, CosineAnnealingWarmRestarts):
-            decoder_scheduler.step()
 
         elapsed = time.time() - start_time
         if global_rank == 0:
