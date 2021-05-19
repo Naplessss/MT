@@ -80,7 +80,7 @@ print('cur rank',local_rank,'global_rank', global_rank)
 class CFG:
     debug=False if args.debug==0 else True
     max_len=275
-    print_freq=1
+    print_freq=1000
     num_workers=6
     model_name=args.model_name
     meta_info=args.meta_info
