@@ -310,11 +310,16 @@ def valid_fn(valid_loader, encoder, decoder, tokenizer, criterion, device):
         LOGGER.info(f"preds: {text_preds[:5]}")
     return score
 
+def transform_nfnet(model_name, pretrained):
+    import nfnet
+    return getattr(nfnet, model_name)(pretrained=pretrained)
 
 class Encoder(nn.Module):
     def __init__(self, model_name='resnet18', pretrained=False):
         super().__init__()
         self.cnn = timm.create_model(model_name, pretrained=pretrained)
+        if model_name.startswith('dm_nfnet'):
+            self.cnn = transform_nfnet(model_name, pretrained)
         if model_name.startswith('swin'): # swintransformer
             self.n_features = self.cnn.head.in_features
         elif model_name.startswith('tnt'):  # TNT
