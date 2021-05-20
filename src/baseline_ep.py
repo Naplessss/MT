@@ -63,6 +63,7 @@ parser.add_argument('--tmax', default=4, type=int)
 parser.add_argument('--debug', default=0, type=int)
 parser.add_argument('--epochs', default=20, type=int)
 parser.add_argument('--local', default=0, type=int)
+parser.add_argument('--debug_grad', default=0, type=int)
 args = parser.parse_args()
 
 if args.nodes > 1:
@@ -392,6 +393,9 @@ def train_loop(folds, fold):
     # ====================================================
     encoder = Encoder(CFG.model_name, pretrained=True)
     encoder_dim = encoder.n_features
+    if args.debug_grad:
+        from transformers.debug_utils import DebugUnderflowOverflow
+        encoder = DebugUnderflowOverflow(encoder)
     # DDP
     encoder = nn.SyncBatchNorm.convert_sync_batchnorm(encoder).cuda().to(local_rank)
     encoder = torch.nn.parallel.DistributedDataParallel(encoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
