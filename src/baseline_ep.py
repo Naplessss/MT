@@ -393,12 +393,14 @@ def train_loop(folds, fold):
     # ====================================================
     encoder = Encoder(CFG.model_name, pretrained=True)
     encoder_dim = encoder.n_features
-    if args.debug_grad:
-        from transformers.debug_utils import DebugUnderflowOverflow
-        encoder = DebugUnderflowOverflow(encoder)
     # DDP
     encoder = nn.SyncBatchNorm.convert_sync_batchnorm(encoder).cuda().to(local_rank)
     encoder = torch.nn.parallel.DistributedDataParallel(encoder,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
+
+    if args.debug_grad:
+        from transformers.debug_utils import DebugUnderflowOverflow
+        debugoverflow = DebugUnderflowOverflow(encoder)
+
     if global_rank == 0:
         print('encoder DDP finish')
     encoder_optimizer = AdamW(filter(lambda p: p.requires_grad, encoder.parameters()), lr=(train_batchsize/128)*CFG.encoder_lr, weight_decay=CFG.weight_decay)
