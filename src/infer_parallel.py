@@ -211,9 +211,33 @@ class DecoderWithAttention(nn.Module):
         predicted_softmax = function(preds, dim=1)
         return predicted_softmax, hidden, None
 
+class TestDataset(Dataset):
+    def __init__(self, df, transform=None, fix=True):
+        super().__init__()
+        self.df = df
+        self.file_paths = df['file_path'].values
+        self.transform = transform
+        self.fix = fix
+        self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        file_path = self.file_paths[idx]
+        image = cv2.imread(file_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        h, w, _ = image.shape
+        if self.fix and h > w:
+            image = self.fix_transform(image=image)['image']
+        if self.transform:
+            augmented = self.transform(image=image)
+            image = augmented['image']
+        return image
+
 from utils import Tokenizer
 from utils import get_train_file_path, get_score, init_logger, seed_torch
-from dataset import TrainDataset, TestDataset
+# from dataset import TrainDataset, TestDataset
 from beam import TopKDecoder
 # from attention import Attention, DecoderWithAttention
 from utils import AverageMeter, asMinutes, timeSince
