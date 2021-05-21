@@ -397,7 +397,7 @@ if __name__ == '__main__':
     # submission
     test['InChI'] = [f"{text}" for text in predictions]
     if CFG.local:
-        test[['image_id', 'InChI']].to_csv(f'../weights/{CFG.weight_path}/{CFG.weight_name}_sub_part_{part}.csv', index=False)
+        test[['image_id', 'InChI']].to_csv(f'../weights/{CFG.weight_path}/{CFG.weight_name}_sub_fix_{CFG.fix}_part_{part}.csv', index=False)
     else:
-        test[['image_id', 'InChI']].to_csv(f'/mnt/epblob/zhgao/MT/weights/{CFG.weight_path}/{CFG.weight_name}_sub_part_{part}.csv', index=False)
+        test[['image_id', 'InChI']].to_csv(f'/mnt/epblob/zhgao/MT/weights/{CFG.weight_path}/{CFG.weight_name}_sub_fix_{CFG.fix}_part_{part}.csv', index=False)
     print(test[['image_id', 'InChI']].head())
