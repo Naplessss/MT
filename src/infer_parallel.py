@@ -260,6 +260,7 @@ parser.add_argument('--debug', default=1, type=int)
 parser.add_argument('--max_len', default=256, type=int)
 parser.add_argument('--local', default=0, type=int)
 parser.add_argument('--fix', default=1, type=int)
+parser.add_argument('--output_all', default=0, type=int)
 args = parser.parse_args()
 
 class CFG:
@@ -367,15 +368,34 @@ def inference(test_loader, encoder, decoder, tokenizer, device):
 
             decoder_outputs, decoder_hidden, other = topk_decoder(None, hidden, encoder_out)
 
-            for b in range(batch_size):
-                length = other['topk_length'][b][0]
-                tgt_id_seq = [other['topk_sequence'][di][b, 0, 0].item() for di in range(length)]
-                predictions.append(tgt_id_seq)
-            assert len(predictions) == batch_size
+            if args.output_all:  # save all top k predictions
+                for b in range(batch_size):
+                    predictions_k = []
+                    for i in range(CFG.k):
+                        length = other['topk_length'][b][i]
+                        tgt_id_seq = [other['topk_sequence'][di][b, i, 0].item() for di in range(length)]
+                        predictions_k.append(tgt_id_seq)
+                    predictions.append(predictions_k)
+                assert len(predictions) == batch_size
+            else:
+                for b in range(batch_size):
+                    length = other['topk_length'][b][0]
+                    tgt_id_seq = [other['topk_sequence'][di][b, 0, 0].item() for di in range(length)]
+                    predictions.append(tgt_id_seq)
+                assert len(predictions) == batch_size
 
-        predictions = tokenizer.predict_captions(predictions)
-        predictions = ['InChI=1S/' + p.replace('<sos>', '') for p in predictions]
-        text_preds.append(predictions)
+        if args.output_all:
+            predictions = [tokenizer.predict_captions(predictions_k) for predictions_k in predictions]
+            final_predictions = []
+            for predictions_k in predictions:
+                single_preds = ['InChI=1S/' + p.replace('<sos>', '') for p in predictions_k]
+                single_preds = '#TAB#'.join(single_preds)
+                final_predictions.append(single_preds)
+            text_preds.append(final_predictions)
+        else:
+            predictions = tokenizer.predict_captions(predictions)
+            predictions = ['InChI=1S/' + p.replace('<sos>', '') for p in predictions]
+            text_preds.append(predictions)
     text_preds = np.concatenate(text_preds)
     return text_preds
 
