@@ -107,7 +107,7 @@ class TopKDecoder(torch.nn.Module):
         for i in range(0, max_length):
 
             # Run the RNN one step forward
-            if isinstance(self.rnn, torch.nn.DataParallel):
+            if isinstance(self.rnn, torch.nn.DataParallel) or isinstance(self.rnn, torch.nn.parallel.DistributedDataParallel):
                 log_softmax_output, hidden, _ = self.rnn.module.forward_step(input_var, hidden,
                                                                   inflated_encoder_outputs, function=function)
             else:

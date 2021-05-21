@@ -113,11 +113,12 @@ class TrainDataset(Dataset):
 
 
 class TestDataset(Dataset):
-    def __init__(self, df, transform=None):
+    def __init__(self, df, transform=None, fix=True):
         super().__init__()
         self.df = df
         self.file_paths = df['file_path'].values
         self.transform = transform
+        self.fix = fix
         self.fix_transform = Compose([Transpose(p=1), VerticalFlip(p=1)])
 
     def __len__(self):
@@ -134,7 +135,7 @@ class TestDataset(Dataset):
         image[:,:,2] = one_c
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         h, w, _ = image.shape
-        if h > w:
+        if self.fix and h > w:
             image = self.fix_transform(image=image)['image']
         if self.transform:
             augmented = self.transform(image=image)
