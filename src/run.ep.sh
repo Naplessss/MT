@@ -1,5 +1,5 @@
 cd /root
-git clone http://Naplessss:GZF1233gzf@github.com/Naplessss/MT.git
+git clone http://Naplessss:xxx@github.com/Naplessss/MT.git
 cd MT
 echo "copy images from blob..."
 cp /mnt/epblob/zhgao/MT/bms-molecular-translation.zip .
